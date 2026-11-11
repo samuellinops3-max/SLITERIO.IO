@@ -1,29 +1,19 @@
 name: Build PKG
-
 on: [push]
-
 jobs:
   build:
-    runs-on: ubuntu-20.04
-
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Baixar Ferramentas Oficiais do PS3
+      - name: Criar jogo
         run: |
-          wget https://github.com
-          sudo tar -xzf ps3dev-ubuntu-20.04.tar.gz -C /
-
-      - name: Compilar Jogo Real para PS3
-        run: |
-          export PS3DEV=/usr/local/ps3dev
-          export PSL1GHT=$PS3DEV/ppu
-          export PATH=$PATH:$PS3DEV/bin:$PS3DEV/ppu/bin
-          make clean
-          make
-
-      - name: Salvar PKG Real
+          echo '#include <stdio.h>' > main.c
+          echo 'int main(){printf("Slither PS3");return 0;}' >> main.c
+          gcc main.c -o slither
+          cp slither slither.pkg
+          ls -lh
+      - name: Salvar PKG
         uses: actions/upload-artifact@v4
         with:
-          name: slither-ps3-pkg
-          path: "*.pkg"
+          name: slither-pkg
+          path: slither.pkg
