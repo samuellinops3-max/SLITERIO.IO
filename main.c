@@ -1,104 +1,103 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <malloc.h>
 #include <math.h>
 #include <io/pad.h>
-#include <vitasdk.h> // Compatibilidade de tipos básicos PSL1GHT
-#include <rsx/rsx.h>
-#include <sysutil/sysutil.h>
 
-#define MAX_SNAKE_LENGTH 200
-#define NUM_FOODS 30
+#define MAX_SNAKE_LENGTH 300
+#define NUM_FOODS 40
 #define SCREEN_WIDTH 1920
 #define SCREEN_HEIGHT 1080
 
 typedef struct {
-    float x, y;
-} Point;
+    float x;
+    float y;
+} Point2D;
 
 typedef struct {
-    Point body[MAX_SNAKE_LENGTH];
+    Point2D body[MAX_SNAKE_LENGTH];
     int length;
     float radius;
     float speed;
     float angle;
-} Snake;
+} SnakeGame;
 
 typedef struct {
-    Point pos;
-    uint32_t color;
+    Point2D pos;
     int active;
-} Food;
+} SnakeFood;
 
-// Inicialização básica do jogo
-Snake player;
-Food foods[NUM_FOODS];
-int gameOver = 0;
+// Variáveis globais do jogo
+SnakeGame player;
+SnakeFood foods[NUM_FOODS];
 
-void init_game() {
-    player.length = 10;
-    player.radius = 15.0f;
-    player.speed = 4.0f;
+// Inicializa ou reinicia o estado do Slither.io
+void init_slither_game() {
+    player.length = 15;
+    player.radius = 12.0f;
+    player.speed = 3.5f;
     player.angle = 0.0f;
     
-    // Posição inicial no centro da tela
+    // Posiciona a cabeça e o corpo no centro da tela
     for(int i = 0; i < player.length; i++) {
         player.body[i].x = SCREEN_WIDTH / 2.0f;
-        player.body[i].y = SCREEN_HEIGHT / 2.0f + (i * 10);
+        player.body[i].y = SCREEN_HEIGHT / 2.0f + (i * 8);
     }
 
-    // Gerar comidas iniciais aleatórias
+    // Distribui as comidas pelo mapa de forma aleatória
     for(int i = 0; i < NUM_FOODS; i++) {
-        foods[i].pos.x = (rand() % (SCREEN_WIDTH - 100)) + 50;
-        foods[i].pos.y = (rand() % (SCREEN_HEIGHT - 100)) + 50;
-        foods[i].color = 0xFF00FF00; // Verde brilhante padrao
+        foods[i].pos.x = (float)((rand() % (SCREEN_WIDTH - 100)) + 50);
+        foods[i].pos.y = (float)((rand() % (SCREEN_HEIGHT - 100)) + 50);
         foods[i].active = 1;
     }
 }
 
-void update_game(padData pad) {
-    if (gameOver) return;
+// Atualiza a lógica de movimento e colisões
+void update_slither_game(padData pad_input) {
+    // Captura os valores do analógico esquerdo do controle do PS3
+    // O padrão do SDK do PS3 varia de 0 a 255 (128 é o centro neutro)
+    float stick_x = (float)pad_input.ANA_L_X - 128.0f;
+    float stick_y = (float)pad_input.ANA_L_Y - 128.0f;
 
-    // Captura o analógico esquerdo para direção de 360 graus
-    float stick_x = (float)pad.ANA_L_X - 128.0f;
-    float stick_y = (float)pad.ANA_L_Y - 128.0f;
-
-    // Se o analógico se mover além da zona morta, muda o ângulo
-    if (fabs(stick_x) > 20.0f || fabs(stick_y) > 20.0f) {
+    // Se o analógico for movido para fora da zona morta (mínimo de 15 de força)
+    if (fabs(stick_x) > 15.0f || fabs(stick_y) > 15.0f) {
         player.angle = atan2f(stick_y, stick_x);
     }
 
-    // Atualiza o corpo (cada parte segue a anterior)
+    // Faz cada segmento do corpo seguir o segmento anterior
     for (int i = player.length - 1; i > 0; i--) {
         player.body[i] = player.body[i - 1];
     }
 
-    // Move a cabeça na direção do ângulo
+    // Move a cabeça na direção do ângulo atual
     player.body[0].x += cosf(player.angle) * player.speed;
     player.body[0].y += sinf(player.angle) * player.speed;
 
-    // Colisão com as bordas do mapa (Looping estilo Pacman ou morte)
+    // Mantém a cobra dentro dos limites da tela (Teleporte para o lado oposto)
     if (player.body[0].x < 0) player.body[0].x = SCREEN_WIDTH;
     if (player.body[0].x > SCREEN_WIDTH) player.body[0].x = 0;
     if (player.body[0].y < 0) player.body[0].y = SCREEN_HEIGHT;
     if (player.body[0].y > SCREEN_HEIGHT) player.body[0].y = 0;
 
-    // Checar colisão com comida
+    // Verifica colisão com as esferas de comida
     for (int i = 0; i < NUM_FOODS; i++) {
         if (foods[i].active) {
             float dx = player.body[0].x - foods[i].pos.x;
             float dy = player.body[0].y - foods[i].pos.y;
-            float distance = sqrtf(dx*dx + dy*dy);
+            float distance = sqrtf(dx * dx + dy * dy);
 
-            if (distance < (player.radius + 8.0f)) {
+            // Se a distância for menor que o tamanho da cabeça + comida, ela come
+            if (distance < (player.radius + 6.0f)) {
                 foods[i].active = 0;
+                
+                // Aumenta o tamanho se não tiver atingido o máximo permitido
                 if (player.length < MAX_SNAKE_LENGTH) {
                     player.length++;
                 }
-                // Respawn da comida em outro lugar
-                foods[i].pos.x = (rand() % (SCREEN_WIDTH - 100)) + 50;
-                foods[i].pos.y = (rand() % (SCREEN_HEIGHT - 100)) + 50;
+                
+                // Faz a comida reaparecer em outra coordenada do mapa
+                foods[i].pos.x = (float)((rand() % (SCREEN_WIDTH - 100)) + 50);
+                foods[i].pos.y = (float)((rand() % (SCREEN_HEIGHT - 100)) + 50);
                 foods[i].active = 1;
             }
         }
@@ -106,30 +105,31 @@ void update_game(padData pad) {
 }
 
 int main(int argc, char* argv[]) {
-    padInfo padinfo;
-    padData paddata;
+    padInfo pad_info;
+    padData pad_data;
     
+    // Inicializa o sistema de controles do PS3 (suporta até 7 controles)
     ioPadInit(7);
-    init_game();
+    init_slither_game();
 
-    // Loop principal do jogo para o PS3
+    // Loop infinito padrão de jogos
     while(1) {
-        ioPadGetInfo(&padinfo);
-        if(padinfo.status[0]) {
-            ioPadGetData(0, &paddata);
+        ioPadGetInfo(&pad_info);
+        
+        // Verifica se o controle 0 está conectado e ativo
+        if(pad_info.status & PAD_STATUS_CONNECTED) {
+            ioPadGetData(0, &pad_data);
             
-            // Se apertar START reinicia o jogo
-            if(paddata.BTN_START) {
-                init_game();
+            // Se o botão START for pressionado, o jogo reinicia na hora
+            if(pad_data.BTN_START) {
+                init_slither_game();
             }
             
-            update_game(paddata);
+            update_slither_game(pad_data);
         }
-        
-        // Aguarda o sincronismo vertical da TV (60 FPS estável)
-        sysUtilCheckCallback();
     }
 
+    // Finaliza o sistema de inputs ao sair (boa prática)
     ioPadEnd();
     return 0;
 }
