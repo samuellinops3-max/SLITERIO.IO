@@ -4,18 +4,9 @@ jobs:
   build:
     runs-on: ubuntu-20.04
     steps:
-    - uses: actions/checkout@v4
-    - name: Instalar SDK
-      run: wget https://github.com && sudo tar -xzf ps3dev-ubuntu-20.04.tar.gz -C /
-    - name: Compilar
-      run: |
-        export PS3DEV=/usr/local/ps3dev
-        export PSL1GHT=$PS3DEV/ppu
-        export PATH=$PATH:$PS3DEV/bin:$PS3DEV/ppu/bin
-        make clean
-        make
-    - name: Salvar PKG
-      uses: actions/upload-artifact@v4
-      with:
-        name: slither-pkg
-        path: "*.pkg"
+      - uses: actions/checkout@v4
+      - run: bash build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: slither-pkg
+          path: "*.pkg"
