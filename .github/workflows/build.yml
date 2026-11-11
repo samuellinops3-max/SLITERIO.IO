@@ -1,38 +1,29 @@
-name: Build PS3 PKG
+name: Build PKG
 
-on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Instalar Dependencias do Ubuntu
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y autoconf automake bison flex fontconfig g++ gawk gcc git libelf-dev libfontconfig1-dev libfreetype6-dev libgmp-dev libmodules-os-perl libmpc-dev libmpfr-dev libncurses5-dev libssl-dev libtool libtool-bin make patch pkg-config python3 python3-pip texinfo wget zlib1g-dev
+      - name: Baixar Ferramentas Oficiais do PS3
+        run: |
+          wget https://github.com
+          sudo tar -xzf ps3dev-ubuntu-20.04.tar.gz -C /
 
-    - name: Instalar PS3 Toolchain e PSL1GHT
-      run: |
-        git clone https://github.com
-        cd ps3toolchain
-        ./build-toolchain.sh
-      env:
-        PS3DEV: ${{ github.workspace }}/ps3dev
-        PATH: ${{ github.workspace }}/ps3dev/bin:${{ github.workspace }}/ps3dev/ppu/bin:${{ github.workspace }}/ps3dev/spu/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - name: Compilar Jogo Real para PS3
+        run: |
+          export PS3DEV=/usr/local/ps3dev
+          export PSL1GHT=$PS3DEV/ppu
+          export PATH=$PATH:$PS3DEV/bin:$PS3DEV/ppu/bin
+          make clean
+          make
 
-    - name: Compilar Jogo
-      run: |
-        make clean
-        make
-      env:
-        PS3DEV: ${{ github.workspace }}/ps3dev
-        PSL1GHT: ${{ github.workspace }}/ps3dev/ppu
-        PATH: ${{ github.workspace }}/ps3dev/bin:${{ github.workspace }}/ps3dev/ppu/bin:${{ github.workspace }}/ps3dev/spu/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - name: Salvar PKG Real
+        uses: actions/upload-artifact@v4
+        with:
+          name: slither-ps3-pkg
+          path: "*.pkg"
