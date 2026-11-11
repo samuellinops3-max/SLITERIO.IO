@@ -1,12 +1,26 @@
-name: Build PKG
+name: Build PS3 PKG
 on: [push]
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Criar jogo
-        run: wget https://github.com && sudo tar -xzf ps3dev-ubuntu-20.04.tar.gz -C / && export PS3DEV=/usr/local/ps3dev && export PSL1GHT=$PS3DEV/ppu && export PATH=$PATH:$PS3DEV/bin:$PS3DEV/ppu/bin && make clean && make
+      - name: Testar Build
+        run: |
+          echo "=== TESTE BUILD ==="
+          ls -lh
+          cat Makefile
+          docker run --rm -v ${{ github.workspace }}:/src -w /src ghcr.io/ps3dev/psl1ght:latest bash -c "
+            echo 'Toolchain OK'
+            ls -lh
+            python3 -c \"from PIL import Image; Image.new('RGB',(320,176),(0,200,0)).save('ICON0.PNG')\"
+            make clean
+            make
+            ls -lh
+            make pkg
+            ls -lh *.pkg
+            echo 'BUILD OK'
+          "
       - name: Salvar PKG
         uses: actions/upload-artifact@v4
         with:
