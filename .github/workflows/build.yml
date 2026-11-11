@@ -8,7 +8,7 @@ jobs:
       - name: Compilar PKG PS3
         run: |
           ls -lh
-          docker run --rm -v ${{ github.workspace }}:/src -w /src ps3dev/ps3toolchain:latest bash -c "
+          docker run --rm -v ${{ github.workspace }}:/src -w /src ghcr.io/ps3dev/ps3toolchain:latest bash -c "
             export PSL1GHT=/usr/local/psl1ght
             export PS3DEV=/usr/local/ps3dev
             export PATH=\$PATH:\$PSL1GHT/ppu/bin:\$PS3DEV/ppu/bin:\$PSL1GHT/host/bin
