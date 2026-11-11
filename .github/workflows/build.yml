@@ -2,18 +2,20 @@ name: Build PKG
 on: [push]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v4
-      - name: Criar jogo
-        run: |
-          echo '#include <stdio.h>' > main.c
-          echo 'int main(){printf("Slither PS3");return 0;}' >> main.c
-          gcc main.c -o slither
-          cp slither slither.pkg
-          ls -lh
-      - name: Salvar PKG
-        uses: actions/upload-artifact@v4
-        with:
-          name: slither-pkg
-          path: slither.pkg
+    - uses: actions/checkout@v4
+    - name: Instalar SDK
+      run: wget https://github.com && sudo tar -xzf ps3dev-ubuntu-20.04.tar.gz -C /
+    - name: Compilar
+      run: |
+        export PS3DEV=/usr/local/ps3dev
+        export PSL1GHT=$PS3DEV/ppu
+        export PATH=$PATH:$PS3DEV/bin:$PS3DEV/ppu/bin
+        make clean
+        make
+    - name: Salvar PKG
+      uses: actions/upload-artifact@v4
+      with:
+        name: slither-pkg
+        path: "*.pkg"
