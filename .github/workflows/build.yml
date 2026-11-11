@@ -14,15 +14,9 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Compile and Generate PKG
       run: |
         make clean
         make
-
-    - name: Upload PKG Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        name: SlitherIO-PS3-PKG
-        path: "*.pkg"
