@@ -9,14 +9,30 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ps3dev/ps3dev:master
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Compile and Generate PKG
+    - name: Instalar Dependencias do Ubuntu
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y autoconf automake bison flex fontconfig g++ gawk gcc git libelf-dev libfontconfig1-dev libfreetype6-dev libgmp-dev libmodules-os-perl libmpc-dev libmpfr-dev libncurses5-dev libssl-dev libtool libtool-bin make patch pkg-config python3 python3-pip texinfo wget zlib1g-dev
+
+    - name: Instalar PS3 Toolchain e PSL1GHT
+      run: |
+        git clone https://github.com
+        cd ps3toolchain
+        ./build-toolchain.sh
+      env:
+        PS3DEV: ${{ github.workspace }}/ps3dev
+        PATH: ${{ github.workspace }}/ps3dev/bin:${{ github.workspace }}/ps3dev/ppu/bin:${{ github.workspace }}/ps3dev/spu/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+    - name: Compilar Jogo
       run: |
         make clean
         make
+      env:
+        PS3DEV: ${{ github.workspace }}/ps3dev
+        PSL1GHT: ${{ github.workspace }}/ps3dev/ppu
+        PATH: ${{ github.workspace }}/ps3dev/bin:${{ github.workspace }}/ps3dev/ppu/bin:${{ github.workspace }}/ps3dev/spu/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
